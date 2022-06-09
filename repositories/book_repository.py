@@ -1,6 +1,8 @@
 from db.run_sql import run_sql
 
 from models.book import Book
+from models.author import Author
+from repositories import author_repository
 
 def save(book):
     sql = "INSERT INTO books (title, author_id, blurb, read) VALUES (%s, %s, %s, %s) RETURNING *"
@@ -10,10 +12,16 @@ def save(book):
     book.id = id
     return book
 
-def delete(id):
-    sql = "DELETE FROM books WHERE id = %s"
+def select(id):
+    book = None
+    sql = "SELECT * FROM books WHERE id = %s"
     values = [id]
-    run_sql(sql, values)
+    result = run_sql(sql, values)[0]
+    
+    if result is not None:
+        author = author_repository.select(result['author_id'])
+        book = Book(result['title'], author, result['blurb'], result['read'], result['id'])
+    return book
 
 def select_all():
     books = []
@@ -22,7 +30,16 @@ def select_all():
     results = run_sql(sql)
 
     for row in results:
-        book = artist_repository.select(row['user_id'])
-        task = Book(row['description'], user, row['duration'], row['completed'], row['id'] )
-        tasks.append(task)
-    return tasks
+        author = author_repository.select(row['author_id'])
+        book = Book(row['title'], author, row['blurb'], row['id'] )
+        books.append(book)
+    return books
+
+def delete(id):
+    sql = "DELETE FROM books WHERE id = %s"
+    values = [id]
+    run_sql(sql, values)
+
+def delete_all():
+    sql = "DELETE FROM books"
+    run_sql(sql)
